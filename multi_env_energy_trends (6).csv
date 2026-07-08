@@ -1,0 +1,55 @@
+Environment,Resolution_Quality,Resolution_Value,Planner,Trial,Solved,Energy_Joules,Time_Seconds
+cubicles_env.dae,Coarse,0.05,PRM,1,Exact solution,0.645475,0.016613249
+cubicles_env.dae,Coarse,0.05,PRM,2,Exact solution,0.694895,0.016317181
+cubicles_env.dae,Coarse,0.05,RRTstar,1,Exact solution,322.030389,10.0008393
+cubicles_env.dae,Coarse,0.05,RRTstar,2,Exact solution,318.167872,10.001908067
+cubicles_env.dae,Coarse,0.05,RRTConnect,1,Exact solution,0.258028,0.007422337
+cubicles_env.dae,Coarse,0.05,RRTConnect,2,Exact solution,0.578889,0.017918165
+cubicles_env.dae,Standard,0.01,PRM,1,Exact solution,1.346198,0.039279800000000004
+cubicles_env.dae,Standard,0.01,PRM,2,Exact solution,1.480667,0.04266205
+cubicles_env.dae,Standard,0.01,RRTstar,1,Exact solution,312.990161,10.018139747
+cubicles_env.dae,Standard,0.01,RRTstar,2,Exact solution,314.741063,10.018176906999999
+cubicles_env.dae,Standard,0.01,RRTConnect,1,Exact solution,0.865098,0.02631192
+cubicles_env.dae,Standard,0.01,RRTConnect,2,Exact solution,1.034431,0.031518303
+cubicles_env.dae,Fine,0.001,PRM,1,Approximate solution,331.73611,10.228501594
+cubicles_env.dae,Fine,0.001,PRM,2,Approximate solution,345.545897,10.423695967
+cubicles_env.dae,Fine,0.001,RRTstar,1,Approximate solution,333.68657,10.017346499
+cubicles_env.dae,Fine,0.001,RRTstar,2,Approximate solution,340.322442,10.324622669
+cubicles_env.dae,Fine,0.001,RRTConnect,1,Exact solution,307.335715,9.308284407
+cubicles_env.dae,Fine,0.001,RRTConnect,2,Exact solution,256.989441,7.813835817
+Apartment_env.dae,Coarse,0.05,PRM,1,Exact solution,14.46643,0.414776382
+Apartment_env.dae,Coarse,0.05,PRM,2,Exact solution,20.72987,0.67039014
+Apartment_env.dae,Coarse,0.05,RRTstar,1,Exact solution,312.710193,10.049253812000002
+Apartment_env.dae,Coarse,0.05,RRTstar,2,Exact solution,316.306365,10.025146826
+Apartment_env.dae,Coarse,0.05,RRTConnect,1,Exact solution,5.157174,0.154991866
+Apartment_env.dae,Coarse,0.05,RRTConnect,2,Exact solution,5.038252,0.1405751
+Apartment_env.dae,Standard,0.01,PRM,1,Exact solution,192.9868,6.04361489
+Apartment_env.dae,Standard,0.01,PRM,2,Exact solution,106.201615,3.206198766
+Apartment_env.dae,Standard,0.01,RRTstar,1,Exact solution,328.466092,10.03340007
+Apartment_env.dae,Standard,0.01,RRTstar,2,Approximate solution,317.660284,10.025264965
+Apartment_env.dae,Standard,0.01,RRTConnect,1,Exact solution,35.128051,0.9915065080000001
+Apartment_env.dae,Standard,0.01,RRTConnect,2,Exact solution,14.525036,0.466024755
+Apartment_env.dae,Fine,0.002,PRM,1,Approximate solution,420.480956,13.419066617
+Apartment_env.dae,Fine,0.002,PRM,2,Timeout,322.517806,10.105828448999999
+Apartment_env.dae,Fine,0.002,RRTstar,1,Approximate solution,333.423141,10.501730408
+Apartment_env.dae,Fine,0.002,RRTstar,2,Approximate solution,338.504574,10.711426557
+Apartment_env.dae,Fine,0.002,RRTConnect,1,Timeout,318.629213,10.044220957
+Apartment_env.dae,Fine,0.002,RRTConnect,2,Approximate solution,341.133222,11.13867523
+Twistycool_env.dae,Coarse,0.02,PRM,1,Exact solution,1.153108,0.032905849
+Twistycool_env.dae,Coarse,0.02,PRM,2,Exact solution,1.219023,0.034239265
+Twistycool_env.dae,Coarse,0.02,RRTstar,1,Exact solution,326.500205,10.000245434
+Twistycool_env.dae,Coarse,0.02,RRTstar,2,Exact solution,336.141339,10.012733039999999
+Twistycool_env.dae,Coarse,0.02,RRTConnect,1,Exact solution,0.709024,0.018979717
+Twistycool_env.dae,Coarse,0.02,RRTConnect,2,Exact solution,0.648145,0.018365468
+Twistycool_env.dae,Standard,0.005,PRM,1,Exact solution,7.033374,0.185545634
+Twistycool_env.dae,Standard,0.005,PRM,2,Exact solution,7.025408,0.184198147
+Twistycool_env.dae,Standard,0.005,RRTstar,1,Exact solution,332.983833,10.064419304
+Twistycool_env.dae,Standard,0.005,RRTstar,2,Exact solution,328.049472,10.005717241000001
+Twistycool_env.dae,Standard,0.005,RRTConnect,1,Exact solution,2.755137,0.080230723
+Twistycool_env.dae,Standard,0.005,RRTConnect,2,Exact solution,3.60783,0.096354737
+Twistycool_env.dae,Fine,0.0005,PRM,1,Timeout,377.117003,11.451376449
+Twistycool_env.dae,Fine,0.0005,PRM,2,Timeout,381.69573,11.406790964999999
+Twistycool_env.dae,Fine,0.0005,RRTstar,1,Approximate solution,343.381214,10.276949231000001
+Twistycool_env.dae,Fine,0.0005,RRTstar,2,Approximate solution,333.633564,10.026126813
+Twistycool_env.dae,Fine,0.0005,RRTConnect,1,Approximate solution,338.986711,10.039278405
+Twistycool_env.dae,Fine,0.0005,RRTConnect,2,Approximate solution,334.166435,10.021824105
