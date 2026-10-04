@@ -1,0 +1,17 @@
+build/
+*.o
+sweep_v3.csv
+new_sweep.csv
+cpp_parameter_sweep_benchmark.csv
+cpp_multi_env_energy_raw_data.csv
+sweep_perrun_energy.csv
+old_sweep_backup.csv
+steps.csv
+steps_50x.csv
+probe.csv
+pilot_converged.csv
+pilot_tunneling.csv
+converge.txt
+tunneling.txt
+pilot.txt
+sweep.txt
