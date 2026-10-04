@@ -1,3 +1,4 @@
+// Prior harness (FIX 1-21). Last edited 2026-08-22, superseded by main.cpp. Archived backup. [pushed 2026-10-03]
 // =============================================================================
 //  OMPL RRT-family parameter sweep — corrected harness
 //

@@ -1,3 +1,4 @@
+// Current C++ harness (FIX 1-25). Last edited 2026-08-27 (added clearance + resolution sweep, FIX 22-25). Finalized/active. [pushed 2026-10-03]
 // =============================================================================
 //  OMPL RRT-family parameter sweep — corrected harness
 //

@@ -1,3 +1,4 @@
+# EI/J policy simulator. Finalized 2026-08-28. Active, works on any raw sweep CSV. [pushed 2026-10-03]
 """
 run_eij_sim.py — Run the EI/J mission sim on ANY raw sweep CSV.
 Produces a self-contained step-CSV that the visualization can load directly.
