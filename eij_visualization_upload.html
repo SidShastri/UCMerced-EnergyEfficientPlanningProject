@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EI/J Policy — Energy & Operator Inspector</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--ink:#e6edf3;--muted:#8b949e;--grid:#21262d;
+    --learned:#3fb950;--star:#f85149;--conn:#58a6ff;--accent:#d29922;
+    --fast:#58a6ff;--medium:#d29922;--slow:#f85149;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:24px;line-height:1.5}
+  h1{font-size:20px;margin:0 0 4px}.sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+  .wrap{max-width:1040px;margin:0 auto}
+  .panel{background:var(--panel);border:1px solid var(--grid);border-radius:12px;padding:20px;margin-bottom:16px}
+  .controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+  button{background:#21262d;color:var(--ink);border:1px solid #30363d;border-radius:8px;padding:8px 16px;font-size:14px;cursor:pointer;transition:.15s}
+  button:hover{background:#30363d}
+  button.play{background:var(--learned);color:#03130a;border-color:var(--learned);font-weight:600}
+  .slider{flex:1;min-width:180px;accent-color:var(--learned)}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;margin-top:6px}
+  .lg{display:flex;align-items:center;gap:6px}.sw{width:14px;height:3px;border-radius:2px;display:inline-block}
+  svg{width:100%;height:auto;display:block}
+  .axlab{fill:var(--muted);font-size:11px}.gridline{stroke:var(--grid);stroke-width:1;stroke-dasharray:2 3;opacity:.5}
+  .trace{fill:none;stroke-width:2.5}.switch-tick{fill:var(--accent)}
+  .switch-lab{fill:var(--muted);font-size:9px;text-anchor:middle}
+  .cursor{stroke:var(--ink);stroke-width:1;opacity:.4;stroke-dasharray:3 3}.drone{fill:var(--learned)}
+  .cols{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+  @media(max-width:820px){.cols{grid-template-columns:1fr}}
+  .opcard{background:#0d1117;border:1px solid var(--grid);border-radius:10px;padding:16px}
+  .ophead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .opname{font-size:19px;font-weight:700}
+  .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em}
+  .b-fast{background:rgba(88,166,255,.15);color:var(--fast);border:1px solid var(--fast)}
+  .b-medium{background:rgba(210,153,34,.15);color:var(--medium);border:1px solid var(--medium)}
+  .b-slow{background:rgba(248,81,73,.15);color:var(--slow);border:1px solid var(--slow)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
+  .kv{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--grid)}
+  .kv .k{color:var(--muted)}.kv .v{font-weight:600;font-variant-numeric:tabular-nums}
+  .why{font-size:12px;color:var(--muted);margin-top:12px;padding-top:12px;border-top:1px solid var(--grid)}
+  .why b{color:var(--ink)}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+  th,td{text-align:right;padding:5px 8px;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums}
+  th{color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--panel)}
+  td.p,th.p{text-align:left}
+  tr.active td{background:rgba(63,185,80,.12)}
+  tr{cursor:pointer}tr:hover td{background:rgba(255,255,255,.03)}
+  .tbwrap{max-height:280px;overflow:auto;border:1px solid var(--grid);border-radius:8px}
+  .pill{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+  .drop{border:2px dashed #30363d;border-radius:10px;padding:14px;text-align:center;color:var(--muted);font-size:13px;transition:.15s;cursor:pointer}
+  .drop.over{border-color:var(--learned);background:rgba(63,185,80,.06);color:var(--ink)}
+  .fname{color:var(--learned);font-weight:600}
+  .stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+  .stat{background:#0d1117;border:1px solid var(--grid);border-radius:8px;padding:12px}
+  .stat .lab{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .stat .val{font-size:22px;font-weight:700;margin-top:2px}.stat .s2{font-size:12px;color:var(--muted)}
+  .err{color:var(--star);font-size:13px;margin-top:8px}
+</style></head>
+<body><div class="wrap">
+  <h1>EI/J Policy — Energy & Operator Inspector</h1>
+  <div class="sub">Loads any EI/J step-CSV. <span id="meta"></span></div>
+
+  <div class="panel">
+    <div class="drop" id="drop">⬆ Drop an EI/J step-CSV here, or click to choose a file
+      <input type="file" id="file" accept=".csv" style="display:none">
+      <div id="fileinfo" style="margin-top:6px"></div>
+      <div class="err" id="err"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="controls">
+      <button class="play" id="play">▶ Fly mission</button>
+      <button id="reset">↺ Reset</button>
+      <input type="range" min="0" value="0" step="1" class="slider" id="scrub">
+      <span id="pct" style="font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px"></span>
+    </div>
+    <svg id="chart" viewBox="0 0 900 360" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="legend">
+      <div class="lg"><span class="sw" style="background:var(--learned)"></span> EI/J adaptive</div>
+      <div class="lg"><span class="sw" style="background:var(--star)"></span> always RRT*</div>
+      <div class="lg"><span class="sw" style="background:var(--conn)"></span> always RRTConnect</div>
+      <div class="lg"><span class="sw" style="background:var(--accent)"></span> planner switch</div>
+    </div>
+    <div class="stat3" id="stats"></div>
+  </div>
+
+  <div class="cols">
+    <div class="panel">
+      <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Operator chosen at this step</div>
+      <div class="opcard">
+        <div class="ophead"><div class="opname" id="opname">—</div><div class="badge" id="optier">—</div></div>
+        <div class="grid2" id="opkv"></div>
+        <div class="why" id="opwhy"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">All replan steps</div>
+      <div class="tbwrap"><table><thead><tr>
+        <th class="p">Step</th><th class="p">Planner</th><th>Res</th><th>WP</th><th>Len</th><th>Clr</th><th>Batt</th>
+      </tr></thead><tbody id="tbody"></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_CSV="step,frac,mode,planner,tier,resolution,range,threads,source,is_opt,battery_fraction,plan_time_s,hover_J,flight_J,cumulative_J,path_length,waypoints,smoothness,clear_min,collision_checks,policy\n0,0.0,learned,RRTConnect,fast,0.0005,0.05,1,lookup,No,0.9855,0.0446,11.82,710.8,722.6,312.0,5.4,0.00074,0.693,11724,learned\n1,0.05,learned,RRTConnect,fast,0.0005,0.05,1,lookup,No,0.9712,0.03361,8.907,710.8,1442.4,309.0,4.7,0.00026,0.818,8908,learned\n2,0.1,learned,TRRT,medium,0.0005,0.05,1,lookup,No,0.9565,0.08517,22.571,710.8,2175.7,292.5,5.1,0.00051,0.748,22314,learned\n3,0.15,learned,pRRT,medium,0.002,0.05,4,lookup,No,0.9421,0.03668,9.719,710.8,2896.3,281.0,4.8,0.0004,0.686,4996,learned\n4,0.2,learned,RRTConnect,fast,0.002,0.05,1,lookup,No,0.9277,0.02346,6.218,710.8,3613.3,261.2,4.6,0.00028,0.65,3393,learned\n5,0.25,learned,pRRT,medium,0.0005,0.05,4,lookup,No,0.9131,0.07381,19.559,710.8,4343.7,240.1,4.8,0.00075,0.694,20725,learned\n6,0.3,learned,RRTConnect,fast,0.002,0.05,1,lookup,No,0.8989,0.00516,1.366,710.8,5055.9,228.2,5.0,0.00183,0.633,1073,learned\n7,0.35,learned,RRTConnect,fast,0.0005,0.05,1,lookup,No,0.8846,0.0209,5.539,710.8,5772.2,215.4,4.6,0.00648,0.688,5069,learned\n8,0.4,learned,RRTConnect,fast,0.002,0.05,1,lookup,No,0.8703,0.00236,0.625,710.8,6483.6,188.8,3.2,2e-05,0.965,538,learned\n9,0.45,learned,RRTConnect,fast,0.002,0.05,1,lookup,No,0.856,0.01328,3.518,710.8,7198.0,178.6,3.1,3e-05,1.436,1822,learned\n10,0.5,learned,RRTConnect,fast,0.0005,0.05,1,lookup,No,0.8417,0.02071,5.487,710.8,7914.3,167.1,3.2,5e-05,0.774,5526,learned\n11,0.55,learned,RRTConnect,fast,0.002,0.05,1,lookup,No,0.8275,0.00833,2.207,710.8,8627.3,143.2,3.1,6e-05,0.849,1684,learned\n12,0.6,learned,pRRT,medium,0.0005,0.05,2,lookup,No,0.813,0.0518,13.726,710.8,9351.8,134.4,3.3,0.00015,1.14,14585,learned\n13,0.65,learned,RRTConnect,fast,0.002,0.05,1,lookup,No,0.7987,0.00304,0.807,710.8,10063.5,122.1,3.2,0.00016,1.3,640,learned\n14,0.7,learned,TRRT,medium,0.0005,0.05,1,lookup,No,0.7844,0.02673,7.083,710.8,10781.3,110.3,3.5,0.001,0.876,7983,learned\n15,0.75,learned,RRTConnect,fast,0.0005,0.5,1,lookup,No,0.7701,0.0023,0.609,710.8,11492.8,78.8,2.0,0.0,5.0,963,learned\n16,0.8,learned,RRTConnect,fast,0.002,0.2,1,lookup,No,0.7559,0.0009,0.24,710.8,12203.8,67.1,2.0,0.0,5.0,244,learned\n17,0.85,learned,RRTConnect,fast,0.0005,0.5,1,lookup,No,0.7417,0.00157,0.417,710.8,12915.1,43.4,2.0,0.0,5.0,821,learned\n18,0.9,learned,RRTConnect,fast,0.002,0.5,1,lookup,No,0.7275,0.00104,0.277,710.8,13626.1,31.3,2.0,0.0,5.0,315,learned\n19,0.95,learned,RRTConnect,fast,0.0005,0.05,1,fallback,No,0.7133,0.0008,0.212,710.8,14337.2,31.3,2.0,0.0,5.0,307,learned\n0,0.0,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.9391,8.80556,2333.473,710.8,3044.3,300.5,6.3,0.00113,0.747,581116,rrtstar\n1,0.05,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.8619,11.87992,3148.179,710.8,6903.3,301.3,6.2,0.00178,0.744,757385,rrtstar\n2,0.1,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.7866,11.53033,3055.537,710.8,10669.6,285.9,4.7,0.00023,0.696,738201,rrtstar\n3,0.15,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.723,9.31037,2467.249,710.8,13847.7,274.1,4.6,0.00024,0.773,617389,rrtstar\n4,0.2,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.668,7.69467,2039.087,710.8,16597.6,262.8,4.7,0.00042,0.805,516516,rrtstar\n5,0.25,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.6309,4.33517,1148.82,710.8,18457.2,239.6,4.6,0.0006,0.701,298853,rrtstar\n6,0.3,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.6011,2.92637,775.489,710.8,19943.5,228.6,4.7,0.00227,0.705,205216,rrtstar\n7,0.35,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.5704,3.1243,827.94,710.8,21482.3,217.5,4.7,0.00465,0.716,218859,rrtstar\n8,0.4,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.5469,1.73598,460.034,710.8,22653.1,191.4,3.3,4e-05,1.077,126045,rrtstar\n9,0.45,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.5242,1.60311,424.824,710.8,23788.8,179.1,3.2,4e-05,1.055,119279,rrtstar\n10,0.5,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.4999,1.90661,505.251,710.8,25004.8,166.4,3.4,4e-05,0.791,138324,rrtstar\n11,0.55,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.4727,2.4564,650.945,710.8,26366.6,144.2,3.3,0.00011,0.882,172836,rrtstar\n12,0.6,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.4459,2.36532,626.81,710.8,27704.2,131.8,3.3,0.00012,0.84,165721,rrtstar\n13,0.65,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.4221,1.81461,480.873,710.8,28895.9,120.3,3.5,0.00023,0.819,131831,rrtstar\n14,0.7,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.3909,3.19194,845.865,710.8,30452.6,109.4,3.4,0.00038,0.734,218654,rrtstar\n15,0.75,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.3765,0.03996,10.589,710.8,31174.0,78.8,2.0,0.0,5.0,5957,rrtstar\n16,0.8,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.3579,0.82484,218.583,710.8,32103.4,67.1,2.0,0.0,5.0,63229,rrtstar\n17,0.85,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.3408,0.55945,148.254,710.8,32962.4,43.4,2.0,0.0,5.0,42427,rrtstar\n18,0.9,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.3201,1.21438,321.81,710.8,33995.1,31.3,2.0,0.0,5.0,88981,rrtstar\n19,0.95,baseline,RRTstar,slow,0.0005,0.05,1,fixed,Yes,0.2994,1.21438,321.81,710.8,35027.7,31.3,2.0,0.0,5.0,88981,rrtstar\n0,0.0,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.9855,0.0446,11.82,710.8,722.6,312.0,5.4,0.00074,0.693,11724,rrtconnect\n1,0.05,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.9712,0.03361,8.907,710.8,1442.4,309.0,4.7,0.00026,0.818,8908,rrtconnect\n2,0.1,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.9568,0.03218,8.527,710.8,2161.7,301.2,4.5,0.00031,0.806,8615,rrtconnect\n3,0.15,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.9422,0.05761,15.265,710.8,2887.8,285.5,5.0,0.00082,0.814,13894,rrtconnect\n4,0.2,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.9279,0.03275,8.678,710.8,3607.3,291.7,5.3,0.00275,0.784,7672,rrtconnect\n5,0.25,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.913,0.11362,30.108,710.8,4348.2,262.5,5.2,0.01943,0.583,24350,rrtconnect\n6,0.3,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.8987,0.03037,8.048,710.8,5067.0,229.9,4.4,0.00131,0.707,7715,rrtconnect\n7,0.35,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.8843,0.0209,5.539,710.8,5783.4,215.4,4.6,0.00648,0.688,5069,rrtconnect\n8,0.4,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.87,0.01504,3.985,710.8,6498.2,189.2,3.3,3e-05,1.019,4368,rrtconnect\n9,0.45,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.8558,0.01133,3.002,710.8,7212.0,179.9,3.4,8e-05,0.858,3516,rrtconnect\n10,0.5,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.8414,0.02071,5.487,710.8,7928.3,167.1,3.2,5e-05,0.774,5526,rrtconnect\n11,0.55,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.8271,0.01762,4.669,710.8,8643.8,146.7,3.4,0.0013,1.56,4845,rrtconnect\n12,0.6,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.8127,0.0386,10.23,710.8,9364.8,135.4,3.1,0.0001,0.76,7871,rrtconnect\n13,0.65,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.7984,0.01897,5.026,710.8,10080.7,122.7,3.2,0.00019,1.432,5258,rrtconnect\n14,0.7,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.7841,0.00405,1.072,710.8,10792.6,112.6,3.7,0.00104,0.715,1465,rrtconnect\n15,0.75,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.7699,0.0009,0.239,710.8,11503.6,78.8,2.0,0.0,5.0,347,rrtconnect\n16,0.8,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.7557,0.00065,0.172,710.8,12214.6,67.1,2.0,0.0,5.0,345,rrtconnect\n17,0.85,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.7415,0.0004,0.105,710.8,12925.5,43.4,2.0,0.0,5.0,259,rrtconnect\n18,0.9,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.7273,0.00046,0.121,710.8,13636.4,31.3,2.0,0.0,5.0,267,rrtconnect\n19,0.95,baseline,RRTConnect,fast,0.0005,0.05,1,fixed,No,0.7131,0.00046,0.121,710.8,14347.4,31.3,2.0,0.0,5.0,267,rrtconnect\n";
+
+// ---- CSV parser (simple, handles our clean numeric CSV) ----
+function parseCSV(text){
+  const lines=text.trim().split(/\r?\n/);
+  const head=lines[0].split(',');
+  const rows=lines.slice(1).map(l=>{const c=l.split(',');const o={};head.forEach((h,i)=>o[h]=c[i]);return o;});
+  return {head,rows};
+}
+const NUM=['step','frac','resolution','range','threads','battery_fraction','plan_time_s',
+  'hover_J','flight_J','cumulative_J','path_length','waypoints','smoothness','clear_min','collision_checks'];
+function toPolicy(rows,name){
+  const r=rows.filter(x=>x.policy===name).sort((a,b)=>(+a.step)-(+b.step));
+  const g=k=>r.map(x=>NUM.includes(k)?(x[k]===''||x[k]==null?null:+x[k]):x[k]);
+  return {frac:g('frac'),cum:g('cumulative_J'),batt:g('battery_fraction'),hover:g('hover_J'),
+    flight:g('flight_J'),planner:g('planner'),res:g('resolution'),tier:g('tier'),rng:g('range'),
+    threads:g('threads'),waypoints:g('waypoints'),pathlen:g('path_length'),clear:g('clear_min'),
+    plan_ms:g('plan_time_s').map(v=>v==null?null:+(v*1000).toFixed(1)),is_opt:g('is_opt'),
+    cchk:g('collision_checks'),src:g('source'),n:r.length};
+}
+
+let L,S,C,N;
+function ingest(text,fname){
+  try{
+    const {head,rows}=parseCSV(text);
+    const req=['policy','step','frac','planner','cumulative_J','battery_fraction'];
+    const miss=req.filter(c=>!head.includes(c));
+    if(miss.length){document.getElementById('err').textContent='Missing columns: '+miss.join(', ');return false;}
+    const pols=[...new Set(rows.map(r=>r.policy))];
+    L=toPolicy(rows,'learned');
+    S=pols.includes('rrtstar')?toPolicy(rows,'rrtstar'):null;
+    C=pols.includes('rrtconnect')?toPolicy(rows,'rrtconnect'):null;
+    if(!L.n){document.getElementById('err').textContent="No 'learned' policy rows found.";return false;}
+    N=L.n;
+    document.getElementById('err').textContent='';
+    document.getElementById('meta').textContent=`Showing ${N} steps · policies: ${pols.join(', ')}`;
+    if(fname)document.getElementById('fileinfo').innerHTML='Loaded <span class="fname">'+fname+'</span>';
+    document.getElementById('scrub').max=N-1;
+    setup();render(N-1);
+    return true;
+  }catch(e){document.getElementById('err').textContent='Parse error: '+e.message;return false;}
+}
+
+// ---- chart geometry ----
+const W=900,H=360,m={l:64,r:20,t:18,b:42},iw=W-m.l-m.r,ih=H-m.t-m.b;
+let maxE=1;
+const xi=i=>m.l+(i/(N-1))*iw, Y=e=>m.t+ih-(e/maxE)*ih;
+const svg=document.getElementById('chart'),NS='http://www.w3.org/2000/svg';
+const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+const TIERCLR={fast:'--fast',medium:'--medium',slow:'--slow'};
+function setup(){
+  const all=[...L.cum,...(S?S.cum:[]),...(C?C.cum:[])].filter(v=>v!=null);
+  maxE=Math.max(...all)*1.05;drawStatic();
+}
+function drawStatic(){
+  svg.innerHTML='';
+  for(let g=0;g<=5;g++){const e=maxE*g/5,y=Y(e);
+    svg.appendChild(el('line',{class:'gridline',x1:m.l,y1:y,x2:W-m.r,y2:y}));
+    const t=el('text',{class:'axlab',x:m.l-8,y:y+4,'text-anchor':'end'});t.textContent=(e/1000).toFixed(0)+'k';svg.appendChild(t);}
+  for(let g=0;g<=5;g++){const fr=g/5,x=m.l+fr*iw;const t=el('text',{class:'axlab',x:x,y:H-14,'text-anchor':'middle'});t.textContent=(fr*90|0)+'%';svg.appendChild(t);}
+  svg.appendChild(el('text',{class:'axlab',x:16,y:m.t+ih/2,transform:`rotate(-90 16 ${m.t+ih/2})`,'text-anchor':'middle'})).textContent='Cumulative energy (J)';
+}
+const pathFor=(a,u)=>{let d='';for(let i=0;i<=u;i++){const j=Math.min(i,a.cum.length-1);const v=a.cum[j];if(v==null)break;d+=(i?'L':'M')+xi(i).toFixed(1)+' '+Y(v).toFixed(1)+' ';}return d;};
+let TL,SL,CL;
+function drawTraces(u){
+  [TL,SL,CL].forEach(l=>l&&l.remove());TL=el('g',{});SL=el('g',{});CL=el('g',{});
+  if(S)TL.appendChild(el('path',{class:'trace',d:pathFor(S,N-1),stroke:'var(--star)',opacity:.85}));
+  if(C)TL.appendChild(el('path',{class:'trace',d:pathFor(C,N-1),stroke:'var(--conn)',opacity:.85}));
+  TL.appendChild(el('path',{class:'trace',d:pathFor(L,u),stroke:'var(--learned)'}));
+  let prev=null;
+  for(let i=0;i<=u;i++){const p=L.planner[i];if(p!==prev){const x=xi(i),y=Y(L.cum[i]);
+    SL.appendChild(el('circle',{class:'switch-tick',cx:x,cy:y,r:3.5}));
+    const t=el('text',{class:'switch-lab',x:x,y:y-9});t.textContent=p;SL.appendChild(t);prev=p;}}
+  for(let i=0;i<N;i++){const c=el('circle',{cx:xi(i),cy:Y(L.cum[i]),r:8,fill:'transparent',style:'cursor:pointer'});c.addEventListener('click',()=>{stop();render(i);});SL.appendChild(c);}
+  const cx=xi(u),cy=Y(L.cum[u]);
+  CL.appendChild(el('line',{class:'cursor',x1:cx,y1:m.t,x2:cx,y2:m.t+ih}));
+  CL.appendChild(el('circle',{class:'drone',cx:cx,cy:cy,r:5}));
+  svg.appendChild(TL);svg.appendChild(SL);svg.appendChild(CL);
+}
+const kv=(k,v)=>`<div class="kv"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+const RESN={0.0005:'fine',0.002:'medium',0.008:'coarse'};
+// safe baseline read: if a baseline ended early (dead battery), clamp to its
+// last real step instead of reading past the array end (which gives NaN).
+function at(arr,i){ if(!arr)return null; const j=Math.min(i,arr.length-1); return arr[j]; }
+function inspector(i){
+  document.getElementById('opname').textContent=L.planner[i];
+  const tier=L.tier[i],b=document.getElementById('optier');b.textContent=tier;b.className='badge b-'+tier;
+  const rn=RESN[L.res[i]]||L.res[i];
+  document.getElementById('opkv').innerHTML=
+    kv('Resolution',`${rn} (${L.res[i]})`)+kv('Range',L.rng[i])+kv('Threads',L.threads[i])+
+    kv('Optimizing?',L.is_opt[i]||'—')+kv('Waypoints',L.waypoints[i]??'—')+kv('Path length',L.pathlen[i])+
+    kv('Min clearance',L.clear[i])+kv('Collision checks',(L.cchk[i]??0).toLocaleString())+
+    kv('Plan time',(L.plan_ms[i]??'—')+' ms')+kv('Hover energy',(L.hover[i]??'—')+' J')+
+    kv('Est. source',L.src[i]||'—')+kv('Battery left',(L.batt[i]*100).toFixed(0)+'%');
+  const saved=S?(at(S.cum,i)-L.cum[i]):0;
+  document.getElementById('opwhy').innerHTML=
+    `At <b>${(i/(N-1)*90|0)}%</b> of the route with <b>${(L.batt[i]*100).toFixed(0)}%</b> battery, the policy chose `+
+    `<b>${L.planner[i]}</b> (${tier} tier) at <b>${rn}</b> resolution. `+
+    (tier==='fast'?`It skipped the heavy optimizing planners here — their hover cost isn't worth the marginal path gain at this state. `:
+     tier==='slow'?`Battery was high enough to afford the extra hover time for a better path. `:
+     `A middle-tier planner balanced path quality against hover cost. `)+
+    (S?`Cumulative energy saved vs always-RRT* so far: <b>${(saved/1000).toFixed(1)} kJ</b>.`:'');
+}
+function stats(i){
+  const wrap=document.getElementById('stats');
+  if(!S){wrap.innerHTML='';return;}
+  const bl=(L.batt[i]*100).toFixed(0),bs=(at(S.batt,i)*100).toFixed(0);
+  const saved=(at(S.cum,i)-L.cum[i]),gap=(L.batt[i]-at(S.batt,i))*100;
+  wrap.innerHTML=
+    `<div class="stat"><div class="lab">EI/J battery left</div><div class="val" style="color:var(--learned)">${bl}%</div><div class="s2">at ${(i/(N-1)*90|0)}% of route</div></div>`+
+    `<div class="stat"><div class="lab">Always-RRT* battery</div><div class="val" style="color:var(--star)">${bs}%</div><div class="s2">same point</div></div>`+
+    `<div class="stat"><div class="lab">Energy saved vs RRT*</div><div class="val" style="color:var(--accent)">${(saved/1000).toFixed(1)}kJ</div><div class="s2">+${gap.toFixed(0)} pts battery</div></div>`;
+}
+function buildTable(){
+  const tb=document.getElementById('tbody');tb.innerHTML='';
+  for(let i=0;i<N;i++){const tr=document.createElement('tr');tr.id='row'+i;
+    const clr=`var(${TIERCLR[L.tier[i]]||'--muted'})`;
+    tr.innerHTML=`<td class="p">${i+1}</td><td class="p"><span class="pill" style="background:${clr}"></span>${L.planner[i]}</td>`+
+      `<td>${RESN[L.res[i]]||L.res[i]}</td><td>${L.waypoints[i]??'—'}</td><td>${L.pathlen[i]}</td><td>${L.clear[i]}</td><td>${(L.batt[i]*100).toFixed(0)}%</td>`;
+    tr.addEventListener('click',()=>{stop();render(i);});tb.appendChild(tr);}
+}
+let cur=0,timer=null;
+function render(i){cur=i;buildTable();drawTraces(i);inspector(i);stats(i);
+  document.getElementById('scrub').value=i;
+  document.getElementById('pct').textContent=`${(i/(N-1)*90|0)}% flown · step ${i+1}/${N}`;
+  document.querySelectorAll('#tbody tr').forEach(r=>r.classList.remove('active'));
+  const row=document.getElementById('row'+i);if(row){row.classList.add('active');row.scrollIntoView({block:'nearest'});}
+}
+function stop(){if(timer){clearInterval(timer);timer=null;document.getElementById('play').textContent='▶ Fly mission';}}
+document.getElementById('scrub').addEventListener('input',e=>{stop();render(+e.target.value);});
+document.getElementById('reset').addEventListener('click',()=>{stop();render(0);});
+document.getElementById('play').addEventListener('click',()=>{
+  if(timer){stop();return;}if(cur>=N-1)cur=0;
+  document.getElementById('play').textContent='❚❚ Pause';
+  timer=setInterval(()=>{if(cur>=N-1){stop();return;}render(cur+1);},360);
+});
+// upload wiring
+const drop=document.getElementById('drop'),file=document.getElementById('file');
+drop.addEventListener('click',()=>file.click());
+file.addEventListener('change',e=>{const f=e.target.files[0];if(f){const r=new FileReader();r.onload=()=>{stop();ingest(r.result,f.name);};r.readAsText(f);}});
+['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f){const r=new FileReader();r.onload=()=>{stop();ingest(r.result,f.name);};r.readAsText(f);}});
+// load default
+ingest(DEFAULT_CSV,'demo_steps.csv (pre-loaded)');
+</script></body></html>

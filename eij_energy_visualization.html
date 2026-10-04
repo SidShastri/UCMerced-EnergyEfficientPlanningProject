@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EI/J Policy — Energy & Operator Inspector</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--ink:#e6edf3;--muted:#8b949e;--grid:#21262d;
+    --learned:#3fb950;--star:#f85149;--conn:#58a6ff;--accent:#d29922;
+    --fast:#58a6ff;--medium:#d29922;--slow:#f85149;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:24px;line-height:1.5}
+  h1{font-size:20px;margin:0 0 4px}.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+  .wrap{max-width:1040px;margin:0 auto}
+  .panel{background:var(--panel);border:1px solid var(--grid);border-radius:12px;padding:20px;margin-bottom:16px}
+  .controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+  button{background:#21262d;color:var(--ink);border:1px solid #30363d;border-radius:8px;padding:8px 16px;font-size:14px;cursor:pointer;transition:.15s}
+  button:hover{background:#30363d}
+  button.play{background:var(--learned);color:#03130a;border-color:var(--learned);font-weight:600}
+  .slider{flex:1;min-width:180px;accent-color:var(--learned)}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;margin-top:6px}
+  .lg{display:flex;align-items:center;gap:6px}.sw{width:14px;height:3px;border-radius:2px;display:inline-block}
+  svg{width:100%;height:auto;display:block}
+  .axlab{fill:var(--muted);font-size:11px}.gridline{stroke:var(--grid);stroke-width:1;stroke-dasharray:2 3;opacity:.5}
+  .trace{fill:none;stroke-width:2.5}.switch-tick{fill:var(--accent)}
+  .switch-lab{fill:var(--muted);font-size:9px;text-anchor:middle}
+  .cursor{stroke:var(--ink);stroke-width:1;opacity:.4;stroke-dasharray:3 3}.drone{fill:var(--learned)}
+  /* operator inspector */
+  .cols{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+  @media(max-width:820px){.cols{grid-template-columns:1fr}}
+  .opcard{background:#0d1117;border:1px solid var(--grid);border-radius:10px;padding:16px}
+  .ophead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .opname{font-size:19px;font-weight:700}
+  .badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.04em}
+  .b-fast{background:rgba(88,166,255,.15);color:var(--fast);border:1px solid var(--fast)}
+  .b-medium{background:rgba(210,153,34,.15);color:var(--medium);border:1px solid var(--medium)}
+  .b-slow{background:rgba(248,81,73,.15);color:var(--slow);border:1px solid var(--slow)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
+  .kv{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--grid)}
+  .kv .k{color:var(--muted)}.kv .v{font-weight:600;font-variant-numeric:tabular-nums}
+  .why{font-size:12px;color:var(--muted);margin-top:12px;padding-top:12px;border-top:1px solid var(--grid)}
+  .why b{color:var(--ink)}
+  /* step table */
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+  th,td{text-align:right;padding:5px 8px;border-bottom:1px solid var(--grid);font-variant-numeric:tabular-nums}
+  th{color:var(--muted);font-weight:600;text-align:right;position:sticky;top:0;background:var(--panel)}
+  td.p,th.p{text-align:left}
+  tr.active td{background:rgba(63,185,80,.12)}
+  tr{cursor:pointer}tr:hover td{background:rgba(255,255,255,.03)}
+  .tbwrap{max-height:280px;overflow:auto;border:1px solid var(--grid);border-radius:8px}
+  .pill{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+  .stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+  .stat{background:#0d1117;border:1px solid var(--grid);border-radius:8px;padding:12px}
+  .stat .lab{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .stat .val{font-size:22px;font-weight:700;margin-top:2px}.stat .s2{font-size:12px;color:var(--muted)}
+</style></head>
+<body><div class="wrap">
+  <h1>EI/J Policy — Energy & Operator Inspector</h1>
+  <div class="sub">around_wall route · onboard-realistic regime (30× compute slowdown, hover 250&nbsp;W &gt; flight 180&nbsp;W, 4&nbsp;m/s). Click any step in the chart, slider, or table to inspect the operator the policy chose.</div>
+
+  <div class="panel">
+    <div class="controls">
+      <button class="play" id="play">▶ Fly mission</button>
+      <button id="reset">↺ Reset</button>
+      <input type="range" min="0" max="19" value="0" step="1" class="slider" id="scrub">
+      <span id="pct" style="font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px"></span>
+    </div>
+    <svg id="chart" viewBox="0 0 900 360" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="legend">
+      <div class="lg"><span class="sw" style="background:var(--learned)"></span> EI/J adaptive</div>
+      <div class="lg"><span class="sw" style="background:var(--star)"></span> always RRT*</div>
+      <div class="lg"><span class="sw" style="background:var(--conn)"></span> always RRTConnect</div>
+      <div class="lg"><span class="sw" style="background:var(--accent)"></span> planner switch</div>
+    </div>
+    <div class="stat3" id="stats"></div>
+  </div>
+
+  <div class="cols">
+    <div class="panel">
+      <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">Operator chosen at this step</div>
+      <div class="opcard">
+        <div class="ophead"><div class="opname" id="opname">—</div><div class="badge" id="optier">—</div></div>
+        <div class="grid2" id="opkv"></div>
+        <div class="why" id="opwhy"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px">All 20 replan steps</div>
+      <div class="tbwrap"><table id="tbl"><thead><tr>
+        <th class="p">Step</th><th class="p">Planner</th><th>Res</th><th>WP</th><th>Len</th><th>Clr</th><th>Batt</th>
+      </tr></thead><tbody id="tbody"></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA={"learned": {"frac": [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95], "cum": [722.6, 1442.4, 2175.7, 2896.3, 3613.3, 4343.7, 5055.9, 5772.2, 6483.6, 7198.0, 7914.3, 8627.3, 9351.8, 10063.5, 10781.3, 11492.2, 12203.1, 12914.0, 13624.9, 14335.8], "batt": [0.9855, 0.9712, 0.9565, 0.9421, 0.9277, 0.9131, 0.8989, 0.8846, 0.8703, 0.856, 0.8417, 0.8275, 0.813, 0.7987, 0.7844, 0.7702, 0.7559, 0.7417, 0.7275, 0.7133], "hover": [11.82, 8.907, 22.571, 9.719, 6.218, 19.559, 1.366, 5.539, 0.625, 3.518, 5.487, 2.207, 13.726, 0.806, 7.083, 0.081, 0.074, 0.05, 0.057, 0.121], "flight": [710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8], "planner": ["RRTConnect", "RRTConnect", "TRRT", "pRRT", "RRTConnect", "pRRT", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "pRRT", "RRTConnect", "TRRT", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect"], "res": [0.0005, 0.0005, 0.0005, 0.002, 0.002, 0.0005, 0.002, 0.0005, 0.002, 0.002, 0.0005, 0.002, 0.0005, 0.002, 0.0005, 0.008, 0.008, 0.008, 0.008, 0.0005], "tier": ["fast", "fast", "medium", "medium", "fast", "medium", "fast", "fast", "fast", "fast", "fast", "fast", "medium", "fast", "medium", "fast", "fast", "fast", "fast", "fast"], "rng": [0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05], "threads": [1, 1, 1, 4, 1, 4, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1], "waypoints": [5.4, 4.7, 5.1, 4.8, 4.6, 4.8, 5.0, 4.6, 3.2, 3.1, 3.2, 3.1, 3.3, 3.2, 3.5, 2.0, 2.0, 2.0, 2.0, 2.0], "pathlen": [312.0, 309.0, 292.5, 281.0, 261.2, 240.1, 228.2, 215.4, 188.8, 178.6, 167.1, 143.2, 134.4, 122.1, 110.3, 78.8, 67.1, 43.4, 31.3, 31.3], "clear": [0.693, 0.818, 0.748, 0.686, 0.65, 0.694, 0.633, 0.688, 0.965, 1.436, 0.774, 0.849, 1.14, 1.3, 0.876, 5.0, 5.0, 5.0, 5.0, 5.0], "plan_ms": [44.6, 33.6, 85.2, 36.7, 23.5, 73.8, 5.2, 20.9, 2.4, 13.3, 20.7, 8.3, 51.8, 3.0, 26.7, 0.3, 0.3, 0.2, 0.2, 0.5], "is_opt": ["No", "No", "No", "No", "No", "No", "No", "No", "No", "No", "No", "No", "No", "No", "No", "No", "No", "No", "No", "No"], "cchk": [11724, 8908, 22314, 4996, 3393, 20725, 1073, 5069, 538, 1822, 5526, 1684, 14585, 640, 7983, 42, 37, 25, 26, 267], "src": ["lookup", "lookup", "lookup", "lookup", "lookup", "lookup", "lookup", "lookup", "lookup", "lookup", "lookup", "lookup", "lookup", "lookup", "lookup", "lookup", "lookup", "lookup", "lookup", "fallback"]}, "star": {"frac": [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95], "cum": [3044.3, 6903.3, 10669.6, 13847.7, 16597.6, 18457.2, 19943.5, 21482.3, 22653.1, 23788.8, 25004.8, 26366.6, 27704.2, 28895.9, 30452.6, 31174.0, 32103.4, 32962.4, 33995.1, 35027.7], "batt": [0.9391, 0.8619, 0.7866, 0.723, 0.668, 0.6309, 0.6011, 0.5704, 0.5469, 0.5242, 0.4999, 0.4727, 0.4459, 0.4221, 0.3909, 0.3765, 0.3579, 0.3408, 0.3201, 0.2994], "hover": [2333.473, 3148.179, 3055.537, 2467.249, 2039.087, 1148.82, 775.489, 827.94, 460.034, 424.824, 505.251, 650.945, 626.81, 480.873, 845.865, 10.589, 218.583, 148.254, 321.81, 321.81], "flight": [710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8], "planner": ["RRTstar", "RRTstar", "RRTstar", "RRTstar", "RRTstar", "RRTstar", "RRTstar", "RRTstar", "RRTstar", "RRTstar", "RRTstar", "RRTstar", "RRTstar", "RRTstar", "RRTstar", "RRTstar", "RRTstar", "RRTstar", "RRTstar", "RRTstar"], "res": [0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005]}, "conn": {"frac": [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95], "cum": [722.6, 1442.4, 2161.7, 2887.8, 3607.3, 4348.2, 5067.0, 5783.4, 6498.2, 7212.0, 7928.3, 8643.8, 9364.8, 10080.7, 10792.6, 11503.6, 12214.6, 12925.5, 13636.4, 14347.4], "batt": [0.9855, 0.9712, 0.9568, 0.9422, 0.9279, 0.913, 0.8987, 0.8843, 0.87, 0.8558, 0.8414, 0.8271, 0.8127, 0.7984, 0.7841, 0.7699, 0.7557, 0.7415, 0.7273, 0.7131], "hover": [11.82, 8.907, 8.527, 15.265, 8.678, 30.108, 8.048, 5.539, 3.985, 3.002, 5.487, 4.669, 10.23, 5.026, 1.072, 0.239, 0.172, 0.105, 0.121, 0.121], "flight": [710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8, 710.8], "planner": ["RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect", "RRTConnect"], "res": [0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005, 0.0005]}, "battery_cap": 50000.0};
+const L=DATA.learned,S=DATA.star,C=DATA.conn,N=L.frac.length;
+const W=900,H=360,m={l:64,r:20,t:18,b:42},iw=W-m.l-m.r,ih=H-m.t-m.b;
+const maxE=Math.max(...S.cum,...L.cum,...C.cum)*1.05;
+const xi=i=>m.l+(i/(N-1))*iw, Y=e=>m.t+ih-(e/maxE)*ih;
+const svg=document.getElementById('chart'),NS='http://www.w3.org/2000/svg';
+const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+const TIERCLR={fast:'--fast',medium:'--medium',slow:'--slow'};
+
+function drawStatic(){
+  svg.innerHTML='';
+  for(let g=0;g<=5;g++){const e=maxE*g/5,y=Y(e);
+    svg.appendChild(el('line',{class:'gridline',x1:m.l,y1:y,x2:W-m.r,y2:y}));
+    const t=el('text',{class:'axlab',x:m.l-8,y:y+4,'text-anchor':'end'});t.textContent=(e/1000).toFixed(0)+'k';svg.appendChild(t);}
+  for(let g=0;g<=5;g++){const fr=g/5,x=m.l+fr*iw;const t=el('text',{class:'axlab',x:x,y:H-14,'text-anchor':'middle'});t.textContent=(fr*90|0)+'%';svg.appendChild(t);}
+  svg.appendChild(el('text',{class:'axlab',x:16,y:m.t+ih/2,transform:`rotate(-90 16 ${m.t+ih/2})`,'text-anchor':'middle'})).textContent='Cumulative energy (J)';
+}
+const pathFor=(a,u)=>{let d='';for(let i=0;i<=u;i++){const j=Math.min(i,a.cum.length-1);const v=a.cum[j];if(v==null)break;d+=(i?'L':'M')+xi(i).toFixed(1)+' '+Y(v).toFixed(1)+' ';}return d;};
+let TL,SL,CL;
+function drawTraces(u){
+  [TL,SL,CL].forEach(l=>l&&l.remove());TL=el('g',{});SL=el('g',{});CL=el('g',{});
+  TL.appendChild(el('path',{class:'trace',d:pathFor(S,N-1),stroke:'var(--star)',opacity:.85}));
+  TL.appendChild(el('path',{class:'trace',d:pathFor(C,N-1),stroke:'var(--conn)',opacity:.85}));
+  TL.appendChild(el('path',{class:'trace',d:pathFor(L,u),stroke:'var(--learned)'}));
+  let prev=null;
+  for(let i=0;i<=u;i++){const p=L.planner[i];if(p!==prev){const x=xi(i),y=Y(L.cum[i]);
+    SL.appendChild(el('circle',{class:'switch-tick',cx:x,cy:y,r:3.5}));
+    const t=el('text',{class:'switch-lab',x:x,y:y-9});t.textContent=p;SL.appendChild(t);prev=p;}}
+  // clickable hotspots at every step
+  for(let i=0;i<N;i++){const c=el('circle',{cx:xi(i),cy:Y(L.cum[i]),r:8,fill:'transparent',style:'cursor:pointer'});c.addEventListener('click',()=>{stop();render(i);});SL.appendChild(c);}
+  const cx=xi(u),cy=Y(L.cum[u]);
+  CL.appendChild(el('line',{class:'cursor',x1:cx,y1:m.t,x2:cx,y2:m.t+ih}));
+  CL.appendChild(el('circle',{class:'drone',cx:cx,cy:cy,r:5}));
+  svg.appendChild(TL);svg.appendChild(SL);svg.appendChild(CL);
+}
+function kv(k,v){return `<div class="kv"><span class="k">${k}</span><span class="v">${v}</span></div>`;}
+// safe baseline read: if a baseline ended early (dead battery), clamp to its
+// last real step instead of reading past the array end (which gives NaN).
+function at(arr,i){ if(!arr)return null; const j=Math.min(i,arr.length-1); return arr[j]; }
+function inspector(i){
+  document.getElementById('opname').textContent=L.planner[i];
+  const tier=L.tier[i],badge=document.getElementById('optier');
+  badge.textContent=tier;badge.className='badge b-'+tier;
+  const resName={0.0005:'fine',0.002:'medium',0.008:'coarse'}[L.res[i]]||L.res[i];
+  document.getElementById('opkv').innerHTML=
+    kv('Resolution',`${resName} (${L.res[i]})`)+
+    kv('Range',L.rng[i])+
+    kv('Threads',L.threads[i])+
+    kv('Optimizing?',L.is_opt[i])+
+    kv('Waypoints',L.waypoints[i]??'—')+
+    kv('Path length',L.pathlen[i])+
+    kv('Min clearance',L.clear[i])+
+    kv('Collision checks',(L.cchk[i]??0).toLocaleString())+
+    kv('Plan time',L.plan_ms[i]+' ms')+
+    kv('Hover energy',L.hover[i]+' J')+
+    kv('Est. source',L.src[i])+
+    kv('Battery left',(L.batt[i]*100).toFixed(0)+'%');
+  const savedNow=(S.cum[i]-L.cum[i]);
+  document.getElementById('opwhy').innerHTML=
+    `At <b>${(i/(N-1)*90|0)}%</b> of the route with <b>${(L.batt[i]*100).toFixed(0)}%</b> battery, the policy chose `+
+    `<b>${L.planner[i]}</b> (${tier} tier) at <b>${resName}</b> resolution. `+
+    (tier==='fast'?`It skipped the heavy optimizing planners here — their hover cost isn't worth the marginal path gain at this state. `:
+     tier==='slow'?`Battery was high enough to afford the extra hover time for a better path. `:
+     `A middle-tier planner balanced path quality against hover cost. `)+
+    `Cumulative energy saved vs always-RRT* so far: <b>${(savedNow/1000).toFixed(1)} kJ</b>.`;
+}
+function buildTable(){
+  const tb=document.getElementById('tbody');tb.innerHTML='';
+  for(let i=0;i<N;i++){const tr=document.createElement('tr');tr.id='row'+i;
+    const clr=`var(${TIERCLR[L.tier[i]]})`;
+    tr.innerHTML=`<td class="p">${i+1}</td><td class="p"><span class="pill" style="background:${clr}"></span>${L.planner[i]}</td>`+
+      `<td>${({0.0005:'fine',0.002:'med',0.008:'coarse'})[L.res[i]]||L.res[i]}</td>`+
+      `<td>${L.waypoints[i]??'—'}</td><td>${L.pathlen[i]}</td><td>${L.clear[i]}</td><td>${(L.batt[i]*100).toFixed(0)}%</td>`;
+    tr.addEventListener('click',()=>{stop();render(i);});tb.appendChild(tr);}
+}
+let cur=0,timer=null;
+function statsBoxes(i){
+  const bl=(L.batt[i]*100).toFixed(0),bs=(at(S.batt,i)*100).toFixed(0);
+  const saved=(at(S.cum,i)-L.cum[i]),gap=(L.batt[i]-at(S.batt,i))*100;
+  document.getElementById('stats').innerHTML=
+    `<div class="stat"><div class="lab">EI/J battery left</div><div class="val" style="color:var(--learned)">${bl}%</div><div class="s2">at ${(i/(N-1)*90|0)}% of route</div></div>`+
+    `<div class="stat"><div class="lab">Always-RRT* battery</div><div class="val" style="color:var(--star)">${bs}%</div><div class="s2">same point</div></div>`+
+    `<div class="stat"><div class="lab">Energy saved vs RRT*</div><div class="val" style="color:var(--accent)">${(saved/1000).toFixed(1)}kJ</div><div class="s2">+${gap.toFixed(0)} pts battery</div></div>`;
+}
+function render(i){cur=i;drawTraces(i);inspector(i);statsBoxes(i);statsBoxes(i);
+  document.getElementById('scrub').value=i;
+  document.getElementById('pct').textContent=`${(i/(N-1)*90|0)}% flown · step ${i+1}/${N}`;
+  document.querySelectorAll('#tbody tr').forEach(r=>r.classList.remove('active'));
+  const row=document.getElementById('row'+i);if(row){row.classList.add('active');row.scrollIntoView({block:'nearest'});}
+}
+function stop(){if(timer){clearInterval(timer);timer=null;document.getElementById('play').textContent='▶ Fly mission';}}
+drawStatic();buildTable();render(0);
+document.getElementById('scrub').addEventListener('input',e=>{stop();render(+e.target.value);});
+document.getElementById('reset').addEventListener('click',()=>{stop();render(0);});
+document.getElementById('play').addEventListener('click',()=>{
+  if(timer){stop();return;}if(cur>=N-1)cur=0;
+  document.getElementById('play').textContent='❚❚ Pause';
+  timer=setInterval(()=>{if(cur>=N-1){stop();return;}render(cur+1);},360);
+});
+</script></body></html>
